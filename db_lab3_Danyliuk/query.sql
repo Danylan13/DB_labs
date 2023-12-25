@@ -7,13 +7,26 @@ group by breweries.brewery_name;
 
 
 --2. Знайти обзори, в яких рейтинг більше 4 та коментар складається з більше ніж 20 символів:
-select beer_reviews.author, beer_reviews.rating, beer_reviews.comment
-from beer_reviews
-where beer_reviews.rating > 4 and length(beer_reviews.comment) > 20;
+SELECT 
+    B.id_beer,
+    B.beer_name,
+    B.type_of_beer,
+    B.alcohol_content,
+    B.country_of_origin,
+    B.price,
+    COUNT(R.id_review) AS total_reviews
+FROM 
+    Beer B
+LEFT JOIN 
+    Beer_reviews R ON B.id_beer = R.id_beer
+WHERE 
+    R.rating > 4
+GROUP BY 
+    B.id_beer;
 
 
 --3. Знайти пиво з найвищим рейтингом і його пивоварню:
-select beer.beer_name, beer.type_of_beer, beer.alcohol_content, beer.price, breweries.brewery_name
+select beer.beer_name, beer.type_of_beer, beer.alcohol_content, beer.price
 from beer_reviews
 inner join (
   select id_beer, max(rating) as max_rating
