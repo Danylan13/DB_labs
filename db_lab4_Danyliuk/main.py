@@ -2,7 +2,7 @@ import psycopg2
 
 username = 'postgres'
 password = 'Patniza13'
-database = 'db_lab3'
+database = 'db_lab4'
 host = 'localhost'
 port = '5432'
 
