@@ -26,12 +26,12 @@ create_views = [
     GROUP BY country_of_origin;
     ''',
     '''
-    CREATE OR REPLACE VIEW avg_rating_by_price AS
-    SELECT price, AVG(rating) AS average_rating
-    FROM Beer_reviews br
-    JOIN Beer b ON br.id_beer = b.id_beer
-    GROUP BY price
-    ORDER BY price;
+    CREATE OR REPLACE VIEW alcohol_content_vs_review_count AS
+    SELECT b.alcohol_content, COUNT(br.id_review) AS review_count
+    FROM Beer b
+    LEFT JOIN Beer_reviews br ON b.id_beer = br.id_beer
+    GROUP BY b.alcohol_content
+    ORDER BY b.alcohol_content;
     '''
 ]
 
@@ -71,21 +71,23 @@ def visualize_beer(result_1, result_2, result_3):
     pie_ax.set_title('Percentage Distribution of Beer Origin Countries')
 
     # Точкова діаграма для третього запиту (result_3)
-    price = []
-    average_rating = []
+    alcohol_content = []
+    review_count = []
 
     for row in result_3:
-        price.append(row[0])
-        average_rating.append(row[1])
+        alcohol_content.append(row[0])
+        review_count.append(row[1])
 
-    graph_ax.plot(price, average_rating, color='blue', marker='o')
+    graph_ax.plot(alcohol_content, review_count, color='green', marker='o')
 
-    for p, r in zip(price, average_rating):
-        graph_ax.annotate(r, xy=(p, r), color='blue', textcoords='offset points')
+    for alc, count in zip(alcohol_content, review_count):
+        graph_ax.annotate(count, xy=(alc, count), color='green', textcoords='offset points')
 
-    graph_ax.set_xlabel('Price')
-    graph_ax.set_ylabel('Average Rating')
-    graph_ax.set_title('Average Rating vs. Price for Beers')
+    graph_ax.set_xlabel('Alcohol Content')
+    graph_ax.set_ylabel('Review Count')
+    graph_ax.set_title('Review Count vs. Alcohol Content for Beers')
+
+
 
     mng = plt.get_current_fig_manager()
     mng.resize(1800, 900)
@@ -107,7 +109,7 @@ with conn.cursor() as cursor:
     cursor.execute("SELECT * FROM beer_count_by_country")
     result_2 = cursor.fetchall()
 
-    cursor.execute("SELECT * FROM avg_rating_by_price")
+    cursor.execute("SELECT * FROM alcohol_content_vs_review_count")
     result_3 = cursor.fetchall()
 
     # Візуалізація отриманих даних
