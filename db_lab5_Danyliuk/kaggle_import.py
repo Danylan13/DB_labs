@@ -1,51 +1,82 @@
 import csv
 import psycopg2
+from datetime import datetime
 
-# Креденціали PostgreSQL
 username = 'postgres'
-password = 'Patniza13'
-database = 'db_lab5'
+password = 'an.21092004'
+database = 'danya'
 host = 'localhost'
 port = '5432'
 
-# Шлях до CSV-файлу для даних про пиво
-csv_file_path = "beers.csv"
+csv_file1_path = "brewery.csv"
+csv_file2_path = "beers.csv"
+csv_file3_path = "reviews.csv"
 
-# З'єднання з базою даних PostgreSQL
+finish_brewery = -1
+finish_beer = -1
+finish_reviews = 30000
+
 conn = psycopg2.connect(user=username, password=password, dbname=database, host=host, port=port)
 
-# Створення курсора
 cur = conn.cursor()
 
-# Очистка існуючих даних з таблиць
-clear_query = '''
-DELETE FROM Beer_reviews;
-DELETE FROM Beer;
-DELETE FROM Breweries;
-'''
+clear_query ='''
+             DELETE FROM Beer_reviews;
+             DELETE FROM Beer;
+             DELETE FROM Breweries;
+             '''
 cur.execute(clear_query)
 
-# Відкриття CSV-файлу та імпорт даних в кожну таблицю
-with open(csv_file_path, 'r', encoding='utf-8') as csv_file:
+# First file
+with open(csv_file1_path, 'r', encoding='utf-8') as csv_file:
     csv_reader = csv.reader(csv_file)
     next(csv_reader)
+    count_breweries = 0
     for row in csv_reader:
-        # Видобування даних з рядка
-        id_beer, beer_name, type_of_beer, alcohol_content, country_of_origin, price, id_brewery = row
+        count_breweries += 1
+        id_brewery, brewery_name, city, state, country, notes, types = row
+        location = city + ", " + country
 
-        # Вставка даних в таблицю Breweries
-        cur.execute("INSERT INTO Breweries (id_brewery, brewery_name, Location, year_of_establishment) VALUES (%s, %s, %s, %s) ON CONFLICT (id_brewery) DO NOTHING",
-                    (id_brewery, 'Назва пивоварні', 'Місце розташування', '1900-01-01'))
+        cur.execute("INSERT INTO Breweries (id_brewery, brewery_name, Location, year_of_establishment) VALUES (%s, %s, %s, %s) returning id_brewery",
+                    (id_brewery, brewery_name, location, datetime.now().date()))
+        if count_breweries == finish_beer:
+            break
 
-        # Вставка даних в таблицю Beer
-        cur.execute("INSERT INTO Beer (id_beer, beer_name, type_of_beer, alcohol_content, country_of_origin, price, id_brewery) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id_beer) DO NOTHING",
-                    (id_beer, beer_name, type_of_beer, float(alcohol_content), country_of_origin, float(price), id_brewery))
+# Second file
+with open(csv_file2_path, 'r', encoding='utf-8') as csv_file:
+    csv_reader = csv.reader(csv_file)
+    next(csv_reader)
+    count_beer = 0
+    for row in csv_reader:
+        count_beer += 1
+        id_beer, beer_name, id_brewery, state, country_of_origin, type_of_beer, availability, alcohol_content, notes, retired = row
+        if alcohol_content == "":
+            alcohol_content = -1
 
-        # Вставка даних в таблицю Beer_reviews (Можливо, доведеться налаштувати цю частину залежно від структури вашого набору даних)
-        cur.execute("INSERT INTO Beer_reviews (id_review, review_date, author, rating, comment, id_beer) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (id_review) DO NOTHING",
-                    (id_beer, '1900-01-01', 'Ім\'я автора', 5.0, 'Коментар', id_beer))
+        cur.execute("INSERT INTO Beer (id_beer, beer_name, type_of_beer, alcohol_content, country_of_origin, price, id_brewery) VALUES (%s, %s, %s, %s, %s, %s, %s) returning id_beer",
+                    (id_beer, beer_name, type_of_beer, alcohol_content, country_of_origin, alcohol_content, id_brewery))
+        if count_beer == finish_beer:
+            break
 
-# Збереження змін та закриття курсора та з'єднання
+## Third file
+#id_review = 0
+#with open(csv_file3_path, 'r', encoding='utf-8') as csv_file:
+#    csv_reader = csv.reader(csv_file)
+#    next(csv_reader)
+#    for row in csv_reader:
+#        id_beer, author, review_date, comment, look, smell, taste, feel, overall, rating = row
+#
+#        if id_review <= finish_reviews:
+#            try:
+#                cur.execute("INSERT INTO Beer_reviews (id_review, review_date, author, rating, comment, id_beer) VALUES (%s, %s, %s, %s, %s, %s)",
+#                            (id_review, review_date, author, rating, comment, id_beer))
+#                id_review += 1
+#            except:
+#                id_review += 1
+#                continue
+#        else:
+#            break
+
 conn.commit()
 cur.close()
 conn.close()
